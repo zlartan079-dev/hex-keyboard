@@ -15,11 +15,12 @@ public class HexKeyboardService extends InputMethodService
     public View onCreateInputView() {
         keyboardView = new HexKeyboardView(this, null);
         keyboardView.setOnKeyListener(this);
-        // Reasonable fixed height; adjust to taste once running on a device.
         int heightPx = (int) (260 * getResources().getDisplayMetrics().density);
         keyboardView.setLayoutParams(new android.view.ViewGroup.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT, heightPx));
         return keyboardView;
+    }
+
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
@@ -48,11 +49,10 @@ public class HexKeyboardService extends InputMethodService
                 ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
                 break;
             case EMOJI:
-                // Placeholder: wire up an emoji picker panel here later.
                 ic.commitText("\uD83D\uDE00", 1);
                 break;
             default:
                 break;
         }
     }
-}
+        }
