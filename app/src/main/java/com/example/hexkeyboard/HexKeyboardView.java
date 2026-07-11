@@ -1,4 +1,3 @@
-        cat > app/src/main/java/com/example/hexkeyboard/HexKeyboardView.java << 'EOF'
 package com.example.hexkeyboard;
 
 import android.content.Context;
@@ -318,4 +317,4 @@ public class HexKeyboardView extends View {
         }
     }
 }
-EOF
+
