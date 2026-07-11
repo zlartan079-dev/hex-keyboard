@@ -33,9 +33,9 @@ public class HexKeyboardService extends InputMethodService
 
         switch (key.type) {
             case LETTER:
-                String text = keyboardView.isCaps()
-                        ? key.label.toUpperCase()
-                        : key.label.toLowerCase();
+                String text = key.sequential
+                        ? key.label
+                        : (keyboardView.isCaps() ? key.label.toUpperCase() : key.label.toLowerCase());
                 ic.commitText(text, 1);
                 break;
             case SPACE:
