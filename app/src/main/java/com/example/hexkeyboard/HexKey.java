@@ -1,15 +1,15 @@
 package com.example.hexkeyboard;
 
-/** A single hexagonal key: its position, size, label and behavior type. */
 public class HexKey {
 
-    public enum Type { LETTER, SHIFT, BACKSPACE, SPACE, ENTER, SYMBOLS, EMOJI }
+    public enum Type { LETTER, SHIFT, BACKSPACE, SPACE, ENTER, SYMBOLS, EMOJI, RESET }
 
     public final Type type;
-    public final String label;   // what's drawn / committed for LETTER keys
-    public float cx, cy;         // center, set by the view during layout
-    public float radius;         // circumradius, set by the view during layout
-    public boolean accent;       // true = highlighted (e.g. enter key)
+    public final String label;
+    public float cx, cy;
+    public float radius;
+    public boolean accent;
+    public boolean sequential;
 
     public HexKey(Type type, String label) {
         this.type = type;
@@ -22,7 +22,6 @@ public class HexKey {
         this.accent = accent;
     }
 
-    /** Distance-based hit test against the key's center. */
     public boolean contains(float x, float y) {
         float dx = x - cx;
         float dy = y - cy;
