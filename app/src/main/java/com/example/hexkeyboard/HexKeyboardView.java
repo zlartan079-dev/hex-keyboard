@@ -1,3 +1,4 @@
+        cat > app/src/main/java/com/example/hexkeyboard/HexKeyboardView.java << 'EOF'
 package com.example.hexkeyboard;
 
 import android.content.Context;
@@ -12,27 +13,19 @@ import android.view.View;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Draws a honeycomb-style keyboard where letters are arranged in plain
- * alphabetical order (A-Z), row by row, with alternating rows offset
- * horizontally to create the interlocking hex pattern.
- */
 public class HexKeyboardView extends View {
 
     public interface OnKeyListener {
         void onKey(HexKey key);
     }
 
-    // --- Layout definition -------------------------------------------------
-    // Each row is a list of tokens. Tokens beginning with '#' are special keys.
-    private static final String[][] LETTER_ROWS = {
-            {"A", "B", "C", "D", "E", "F"},
-            {"G", "H", "I", "J", "K", "L", "M"},
-            {"#SHIFT", "N", "O", "P", "#BACK"},
-            {"Q", "R", "S", "T", "U", "V"},
-            {"W", "X", "Y", "Z"},
-            {"#EMOJI", "#SYMBOLS", "#SPACE", "#ENTER"}
+    private static final String[] ALPHABET = {
+            "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+            "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
     };
+
+    private static final String[] LETTER_FUNCTION_ROW =
+            {"#SHIFT", "#BACK", "#SYMBOLS", "#SPACE", "#ENTER", "#RESET"};
 
     private static final String[][] SYMBOL_ROWS = {
             {"1", "2", "3", "4", "5", "6"},
@@ -46,6 +39,7 @@ public class HexKeyboardView extends View {
     private List<HexKey> keys = new ArrayList<>();
     private boolean caps = false;
     private boolean symbolsMode = false;
+    private int letterIndex = 0;
 
     private OnKeyListener listener;
     private HexKey pressedKey;
@@ -72,6 +66,7 @@ public class HexKeyboardView extends View {
     public boolean isCaps() {
         return caps;
     }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
@@ -88,7 +83,8 @@ public class HexKeyboardView extends View {
             height = desiredHeight;
         }
         setMeasuredDimension(width, height);
-        }
+    }
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
@@ -97,11 +93,42 @@ public class HexKeyboardView extends View {
 
     private void layoutKeys(int w, int h) {
         keys.clear();
-        String[][] rows = symbolsMode ? SYMBOL_ROWS : LETTER_ROWS;
+        if (symbolsMode) {
+            layoutGrid(SYMBOL_ROWS, w, h);
+        } else {
+            layoutSequential(w, h);
+        }
+        invalidate();
+    }
 
+    private void layoutSequential(int w, int h) {
+        float bigAreaHeight = h * 0.65f;
+        float radius = Math.min(w * 0.42f, bigAreaHeight * 0.42f);
+
+        HexKey big = new HexKey(HexKey.Type.LETTER, ALPHABET[letterIndex]);
+        big.sequential = true;
+        big.cx = w / 2f;
+        big.cy = bigAreaHeight / 2f;
+        big.radius = radius;
+        keys.add(big);
+
+        float rowY = bigAreaHeight + (h - bigAreaHeight) / 2f;
+        float spacing = (float) w / LETTER_FUNCTION_ROW.length;
+        float startX = spacing / 2f;
+        float funcRadius = Math.min(spacing, h - bigAreaHeight) / 1.7f;
+
+        for (int i = 0; i < LETTER_FUNCTION_ROW.length; i++) {
+            HexKey key = tokenToKey(LETTER_FUNCTION_ROW[i]);
+            key.cx = startX + spacing * i;
+            key.cy = rowY;
+            key.radius = funcRadius;
+            keys.add(key);
+        }
+    }
+
+    private void layoutGrid(String[][] rows, int w, int h) {
         int rowCount = rows.length;
         float rowHeight = (float) h / rowCount;
-        // circumradius sized so hexagon height (2*radius) roughly matches row height
         float radius = rowHeight / 1.5f;
         float hexWidth = (float) Math.sqrt(3) * radius;
 
@@ -110,7 +137,6 @@ public class HexKeyboardView extends View {
             float cy = rowHeight * r + rowHeight / 2f;
             int count = tokens.length;
 
-            // last (function) row spans the full width evenly regardless of count
             boolean functionRow = (r == rowCount - 1);
             float startX;
             float spacing;
@@ -121,22 +147,19 @@ public class HexKeyboardView extends View {
                 spacing = hexWidth;
                 float totalWidth = spacing * count;
                 startX = (w - totalWidth) / 2f + spacing / 2f;
-                // offset alternating rows to create the honeycomb interlock
                 if (r % 2 == 1) {
                     startX += spacing / 2f;
                 }
             }
 
             for (int i = 0; i < count; i++) {
-                String token = tokens[i];
-                HexKey key = tokenToKey(token);
+                HexKey key = tokenToKey(tokens[i]);
                 key.cx = startX + spacing * i;
                 key.cy = cy;
                 key.radius = functionRow ? Math.min(spacing, rowHeight) / 1.7f : radius * 0.95f;
                 keys.add(key);
             }
         }
-        invalidate();
     }
 
     private HexKey tokenToKey(String token) {
@@ -155,6 +178,8 @@ public class HexKeyboardView extends View {
                 return new HexKey(HexKey.Type.SYMBOLS, "ABC");
             case "#EMOJI":
                 return new HexKey(HexKey.Type.EMOJI, "\u263A");
+            case "#RESET":
+                return new HexKey(HexKey.Type.RESET, "\u21BA");
             default:
                 return new HexKey(HexKey.Type.LETTER, token);
         }
@@ -195,13 +220,13 @@ public class HexKeyboardView extends View {
         }
 
         textPaint.setColor(key.accent ? Color.WHITE : 0xFF202124);
-        textPaint.setTextSize(key.radius * (key.type == HexKey.Type.LETTER ? 0.85f : 0.55f));
+        float sizeFactor = key.sequential ? 0.9f : (key.type == HexKey.Type.LETTER ? 0.85f : 0.55f);
+        textPaint.setTextSize(key.radius * sizeFactor);
         Paint.FontMetrics fm = textPaint.getFontMetrics();
         float textY = key.cy - (fm.ascent + fm.descent) / 2f;
         canvas.drawText(label, key.cx, textY, textPaint);
     }
 
-    /** Pointy-top hexagon centered at (cx, cy) with the given circumradius. */
     private Path hexagonPath(float cx, float cy, float radius) {
         Path path = new Path();
         for (int i = 0; i < 6; i++) {
@@ -275,13 +300,22 @@ public class HexKeyboardView extends View {
             layoutKeys(getWidth(), getHeight());
             return;
         }
+        if (key.type == HexKey.Type.RESET) {
+            letterIndex = 0;
+            layoutKeys(getWidth(), getHeight());
+            return;
+        }
+
         if (listener != null) {
             listener.onKey(key);
         }
-        // auto-drop caps after one letter, like most keyboards
-        if (key.type == HexKey.Type.LETTER && caps) {
-            caps = false;
-            invalidate();
+
+        if (key.type == HexKey.Type.LETTER && key.sequential) {
+            if (letterIndex < ALPHABET.length - 1) {
+                letterIndex++;
+                layoutKeys(getWidth(), getHeight());
+            }
         }
     }
 }
+EOF
