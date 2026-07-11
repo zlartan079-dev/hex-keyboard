@@ -1,0 +1,9 @@
+<resources>
+    <color name="key_fill">#FFFFFF</color>
+    <color name="key_stroke">#DADCE0</color>
+    <color name="key_pressed">#E8EAED</color>
+    <color name="key_special">#DADCE0</color>
+    <color name="key_accent">#2979FF</color>
+    <color name="bg">#F1F3F4</color>
+    <color name="key_text">#202124</color>
+</resources>
