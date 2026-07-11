@@ -18,9 +18,59 @@ public class HexKeyboardView extends View {
         void onKey(HexKey key);
     }
 
-    private static final String[] ALPHABET = {
-            "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-            "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+    private static final String[] COUNTRIES = {
+            "Afghanistan", "Albania", "Algeria", "Andorra", "Angola",
+            "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
+            "Azerbaijan",
+            "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus",
+            "Belgium", "Belize", "Benin", "Bhutan", "Bolivia",
+            "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria",
+            "Burkina Faso", "Burundi",
+            "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic (CAR)",
+            "Chad", "Chile", "China", "Colombia", "Comoros",
+            "Congo, Democratic Republic of the", "Congo, Republic of the", "Costa Rica", "Cote d'Ivoire", "Croatia",
+            "Cuba", "Cyprus", "Czechia (Czech Republic)",
+            "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+            "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea",
+            "Estonia", "Eswatini", "Ethiopia",
+            "Fiji", "Finland", "France",
+            "Gabon", "Gambia", "Georgia", "Germany", "Ghana",
+            "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
+            "Guyana",
+            "Haiti", "Honduras", "Hungary",
+            "Iceland", "India", "Indonesia", "Iran", "Iraq",
+            "Ireland", "Israel", "Italy",
+            "Jamaica", "Japan", "Jordan",
+            "Kazakhstan", "Kenya", "Kiribati", "Kosovo", "Kuwait",
+            "Kyrgyzstan",
+            "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia",
+            "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
+            "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali",
+            "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico",
+            "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro",
+            "Morocco", "Mozambique", "Myanmar (Burma)",
+            "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand",
+            "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia",
+            "Norway",
+            "Oman",
+            "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea",
+            "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
+            "Qatar",
+            "Romania", "Russia", "Rwanda",
+            "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino",
+            "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles",
+            "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands",
+            "Somalia", "South Africa", "South Korea", "South Sudan", "Spain",
+            "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland",
+            "Syria",
+            "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste",
+            "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey",
+            "Turkmenistan", "Tuvalu",
+            "Uganda", "Ukraine", "United Arab Emirates (UAE)", "United Kingdom (UK)", "United States of America (USA)",
+            "Uruguay", "Uzbekistan",
+            "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+            "Yemen",
+            "Zambia", "Zimbabwe"
     };
 
     private static final String[] LETTER_FUNCTION_ROW =
@@ -38,7 +88,7 @@ public class HexKeyboardView extends View {
     private List<HexKey> keys = new ArrayList<>();
     private boolean caps = false;
     private boolean symbolsMode = false;
-    private int letterIndex = 0;
+    private int countryIndex = 0;
 
     private OnKeyListener listener;
     private HexKey pressedKey;
@@ -102,9 +152,9 @@ public class HexKeyboardView extends View {
 
     private void layoutSequential(int w, int h) {
         float bigAreaHeight = h * 0.65f;
-        float radius = Math.min(w * 0.42f, bigAreaHeight * 0.42f);
+        float radius = Math.min(w * 0.46f, bigAreaHeight * 0.46f);
 
-        HexKey big = new HexKey(HexKey.Type.LETTER, ALPHABET[letterIndex]);
+        HexKey big = new HexKey(HexKey.Type.LETTER, COUNTRIES[countryIndex]);
         big.sequential = true;
         big.cx = w / 2f;
         big.cy = bigAreaHeight / 2f;
@@ -210,20 +260,66 @@ public class HexKeyboardView extends View {
         canvas.drawPath(path, fillPaint);
         canvas.drawPath(path, strokePaint);
 
-        String label = key.type == HexKey.Type.LETTER && caps
+        textPaint.setColor(key.accent ? Color.WHITE : 0xFF202124);
+
+        if (key.sequential) {
+            drawFittedLabel(canvas, key.label, key.cx, key.cy, key.radius);
+            return;
+        }
+
+        String label = (key.type == HexKey.Type.LETTER && caps)
                 ? key.label.toUpperCase()
                 : (key.type == HexKey.Type.LETTER ? key.label.toLowerCase() : key.label);
-
         if (key.type == HexKey.Type.SPACE) {
             label = "space";
         }
-
-        textPaint.setColor(key.accent ? Color.WHITE : 0xFF202124);
-        float sizeFactor = key.sequential ? 0.9f : (key.type == HexKey.Type.LETTER ? 0.85f : 0.55f);
-        textPaint.setTextSize(key.radius * sizeFactor);
+        textPaint.setTextSize(key.radius * (key.type == HexKey.Type.LETTER ? 0.85f : 0.55f));
         Paint.FontMetrics fm = textPaint.getFontMetrics();
         float textY = key.cy - (fm.ascent + fm.descent) / 2f;
         canvas.drawText(label, key.cx, textY, textPaint);
+    }
+
+    private void drawFittedLabel(Canvas canvas, String text, float cx, float cy, float radius) {
+        float maxWidth = radius * 1.55f;
+        float maxHeight = radius * 1.3f;
+        float size = radius * 0.42f;
+        float minSize = 14f;
+        List<String> lines;
+
+        while (true) {
+            textPaint.setTextSize(size);
+            lines = wrapText(text, maxWidth);
+            Paint.FontMetrics fm = textPaint.getFontMetrics();
+            float lineHeight = fm.descent - fm.ascent;
+            float totalHeight = lineHeight * lines.size();
+            if (totalHeight <= maxHeight || size <= minSize) break;
+            size -= 2f;
+        }
+
+        Paint.FontMetrics fm = textPaint.getFontMetrics();
+        float lineHeight = fm.descent - fm.ascent;
+        float totalHeight = lineHeight * lines.size();
+        float startY = cy - totalHeight / 2f - fm.ascent;
+        for (int i = 0; i < lines.size(); i++) {
+            canvas.drawText(lines.get(i), cx, startY + i * lineHeight, textPaint);
+        }
+    }
+
+    private List<String> wrapText(String text, float maxWidth) {
+        List<String> lines = new ArrayList<>();
+        String[] words = text.split(" ");
+        StringBuilder line = new StringBuilder();
+        for (String word : words) {
+            String candidate = line.length() == 0 ? word : line + " " + word;
+            if (line.length() == 0 || textPaint.measureText(candidate) <= maxWidth) {
+                line = new StringBuilder(candidate);
+            } else {
+                lines.add(line.toString());
+                line = new StringBuilder(word);
+            }
+        }
+        if (line.length() > 0) lines.add(line.toString());
+        return lines;
     }
 
     private Path hexagonPath(float cx, float cy, float radius) {
@@ -300,7 +396,7 @@ public class HexKeyboardView extends View {
             return;
         }
         if (key.type == HexKey.Type.RESET) {
-            letterIndex = 0;
+            countryIndex = 0;
             layoutKeys(getWidth(), getHeight());
             return;
         }
@@ -310,11 +406,10 @@ public class HexKeyboardView extends View {
         }
 
         if (key.type == HexKey.Type.LETTER && key.sequential) {
-            if (letterIndex < ALPHABET.length - 1) {
-                letterIndex++;
+            if (countryIndex < COUNTRIES.length - 1) {
+                countryIndex++;
                 layoutKeys(getWidth(), getHeight());
             }
         }
     }
-}
-
+            }
