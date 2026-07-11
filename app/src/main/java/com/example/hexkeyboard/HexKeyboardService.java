@@ -16,11 +16,10 @@ public class HexKeyboardService extends InputMethodService
         keyboardView = new HexKeyboardView(this, null);
         keyboardView.setOnKeyListener(this);
         // Reasonable fixed height; adjust to taste once running on a device.
-        int heightPx = (int) (280 * getResources().getDisplayMetrics().density);
-        keyboardView.setMinimumHeight(heightPx);
+        int heightPx = (int) (260 * getResources().getDisplayMetrics().density);
+        keyboardView.setLayoutParams(new android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT, heightPx));
         return keyboardView;
-    }
-
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
